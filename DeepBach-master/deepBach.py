@@ -8,29 +8,19 @@ from DeepBach.data_utils import part_to_inputs, initialization, BACH_DATASET, \
     pickled_dataset_path, SUBDIVISION
 from DeepBach.model_manager import generation, load_models, train_models, \
     create_models
-from DeepBach.metadata import *
+from metadata import *
 
 
 def main():
     # parse arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('--timesteps',
-                        help="model's range (default: %(default)s)",
-                        type=int, default=16)
+    parser.add_argument('--timesteps', help="model's range (default: %(default)s)",type=int, default=16)
     parser.add_argument('-b', '--batch_size_train',
-                        help='batch size used during training phase (default: %(default)s)',
-                        type=int, default=128)
-    parser.add_argument('-s', '--steps_per_epoch',
-                        help='number of steps per epoch (default: %(default)s)',
-                        type=int, default=500)
-    parser.add_argument('--validation_steps',
-                        help='number of validation steps (default: %(default)s)',
-                        type=int, default=20)
-    parser.add_argument('-u', '--num_units_lstm', nargs='+',
-                        help='number of lstm units (default: %(default)s)',
-                        type=int, default=[200, 200])
-    parser.add_argument('-d', '--num_dense',
-                        help='size of non recurrent hidden layers (default: %(default)s)',
+                        help='batch size used during training phase (default: %(default)s)',type=int, default=128)
+    parser.add_argument('-s', '--steps_per_epoch',help='number of steps per epoch (default: %(default)s)',type=int, default=500)
+    parser.add_argument('--validation_steps',help='number of validation steps (default: %(default)s)',type=int, default=20)
+    parser.add_argument('-u', '--num_units_lstm', nargs='+', help='number of lstm units (default: %(default)s)', type=int, default=[200, 200])
+    parser.add_argument('-d', '--num_dense', help='size of non recurrent hidden layers (default: %(default)s)',
                         type=int, default=200)
     parser.add_argument('-n', '--name',
                         help='model name (default: %(default)s)',
@@ -92,16 +82,12 @@ def main():
         dataset_path = None
         pickled_dataset = BACH_DATASET
     if not os.path.exists(pickled_dataset):
-        initialization(dataset_path,
-                       metadatas=metadatas,
-                       voice_ids=[0, 1, 2, 3])
+        initialization(dataset_path, metadatas=metadatas, voice_ids=[0, 1, 2, 3])
 
     # load dataset
-    X, X_metadatas, voice_ids, index2notes, note2indexes, metadatas = pickle.load(
-        open(pickled_dataset,
-             'rb'))
-    NUM_VOICES = len(voice_ids
-                     )
+    print("loading dataset")
+    X, X_metadatas, voice_ids, index2notes, note2indexes, metadatas = pickle.load(open(pickled_dataset,'rb'))
+    NUM_VOICES = len(voice_ids)
     num_pitches = list(map(len, index2notes))
     timesteps = args.timesteps
     batch_size = args.batch_size_train
@@ -120,14 +106,13 @@ def main():
 
     # when reharmonization
     if args.midi_file:
+        print("---- Harmonisation  ----")
         melody = converter.parse(args.midi_file)
-        melody = part_to_inputs(melody.parts[0], index2note=index2notes[0],
-                                note2index=note2indexes[0])
+        melody = part_to_inputs(melody.parts[0],length=sequence_length, index2note=index2notes[0], note2index=note2indexes[0])
         num_voices = NUM_VOICES - 1
         sequence_length = len(melody)
         # todo find a way to specify metadatas when reharmonizing a given melody
-        chorale_metas = [metas.generate(sequence_length) for metas in
-                         metadatas]
+        chorale_metas = [metas.generate(sequence_length) for metas in metadatas]
 
     elif args.reharmonization:
         melody = X[args.reharmonization][0, :]
@@ -139,44 +124,26 @@ def main():
         # todo find a better way to set metadatas
 
         # chorale_metas = [metas[:sequence_length] for metas in X_metadatas[11]]
-        chorale_metas = [metas.generate(sequence_length) for metas in
-                         metadatas]
+        chorale_metas = [metas.generate(sequence_length) for metas in metadatas]
 
     num_iterations = args.num_iterations // batch_size_per_voice // num_voices
     parallel = batch_size_per_voice > 1
     train = args.train > 0
     num_epochs = args.train
     overwrite = args.overwrite
-
-    if not os.path.exists('models/' + model_name + '_' + str(
-                    NUM_VOICES - 1) + '.yaml'):
-        create_models(model_name, create_new=overwrite,
-                      num_units_lstm=num_units_lstm, num_dense=num_dense,
-                      pickled_dataset=pickled_dataset, num_voices=num_voices,
-                      metadatas=metadatas, timesteps=timesteps)
+    print(model_name)
+    if not os.path.exists('DeepBach/models/' + model_name + '_' + str(NUM_VOICES - 1) + '.yaml'):
+        create_models(model_name, create_new=overwrite, num_units_lstm=num_units_lstm, num_dense=num_dense, pickled_dataset=pickled_dataset, num_voices=num_voices, metadatas=metadatas, timesteps=timesteps)
     if train:
-        models = train_models(model_name=model_name,
-                              steps_per_epoch=steps_per_epoch,
-                              num_epochs=num_epochs,
-                              validation_steps=validation_steps,
-                              timesteps=timesteps,
-                              pickled_dataset=pickled_dataset,
-                              num_voices=NUM_VOICES, metadatas=metadatas,
-                              batch_size=batch_size)
+        print(" --Start training models---")
+        models = train_models(model_name=model_name, steps_per_epoch=steps_per_epoch, num_epochs=num_epochs, validation_steps=validation_steps, timesteps=timesteps, pickled_dataset=pickled_dataset, num_voices=NUM_VOICES, metadatas=metadatas, batch_size=batch_size)
     else:
+        print(" --Loading models --")
         models = load_models(model_name, num_voices=NUM_VOICES)
     temperature = 1.
     timesteps = int(models[0].input[0]._keras_shape[1])
-
-    seq = generation(model_base_name=model_name, models=models,
-                     timesteps=timesteps,
-                     melody=melody, initial_seq=None, temperature=temperature,
-                     chorale_metas=chorale_metas, parallel=parallel,
-                     batch_size_per_voice=batch_size_per_voice,
-                     num_iterations=num_iterations,
-                     sequence_length=sequence_length,
-                     output_file=output_file,
-                     pickled_dataset=pickled_dataset)
+    print("--- Starting of the generation --- ")
+    seq = generation(model_base_name=model_name, models=models, timesteps=timesteps, melody=melody, initial_seq=None, temperature=temperature, chorale_metas=chorale_metas, parallel=parallel, batch_size_per_voice=batch_size_per_voice, num_iterations=num_iterations, sequence_length=sequence_length, output_file=output_file, pickled_dataset=pickled_dataset)
 
 
 if __name__ == '__main__':

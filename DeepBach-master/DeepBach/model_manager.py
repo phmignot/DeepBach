@@ -593,6 +593,7 @@ def load_model(model_name, yaml=True):
 
     :rtype: object
     """
+    print( "-- tryng loading one model" + model_name)
     if yaml:
         ext = '.yaml'
         model = model_from_yaml(open(model_name + ext).read())
@@ -677,6 +678,7 @@ def load_models(model_base_name=None, num_voices=4):
     :param model_base_name:
     :return: list of num_voices models
     """
+    print(' -- trying to load '+ model_base_name + '  --')
     models = []
     for voice_index in range(num_voices):
         model_path_name = os.path.join(PACKAGE_DIR,

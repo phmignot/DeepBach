@@ -638,7 +638,7 @@ def create_index_dicts(chorale_list, voice_ids=voice_ids_default):
 def pickled_dataset_path(dataset_dir):
     # last non-empty part is the dataset name
     dataset_name = [el for el in dataset_dir.split('/') if el][-1]
-    return os.path.join(package_dir,
+    return os.path.join(PACKAGE_DIR,
                         'datasets/custom_dataset',
                         dataset_name + '.pickle')
 
