@@ -1,6 +1,6 @@
 # DeepBach 
 
-This repository aims to test and play with the DeepBach model a described in
+This repository aims to test and play with the DeepBach model described in
 
 *DeepBach: a Steerable Model for Bach chorales generation*<br/>
 Gaëtan Hadjeres, François Pachet, Frank Nielsen<br/>
