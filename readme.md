@@ -9,5 +9,6 @@ Gaëtan Hadjeres, François Pachet, Frank Nielsen<br/>
 The code uses python 3.6 together with [PyTorch v1.0](https://pytorch.org/) and
 [music21](http://web.mit.edu/music21/) libraries.
 
-For the original version, please checkout the [original branch](https://github.com/Ghadjeres/DeepBach)
+For the original version, please checkout this [GitHub repository](https://github.com/Ghadjeres/DeepBach).
+
 This repository contains some fixes from the original code (version of October 2017). 
